@@ -55,6 +55,7 @@ class BaseReactiveHandler implements ProxyHandler<Target> {
   get(target: Target, key: string | symbol, receiver: object): any {
     if (key === ReactiveFlags.SKIP) return target[ReactiveFlags.SKIP]
 
+    // 内部属性访问处理
     const isReadonly = this._isReadonly,
       isShallow = this._isShallow
     if (key === ReactiveFlags.IS_REACTIVE) {
@@ -64,6 +65,7 @@ class BaseReactiveHandler implements ProxyHandler<Target> {
     } else if (key === ReactiveFlags.IS_SHALLOW) {
       return isShallow
     } else if (key === ReactiveFlags.RAW) {
+      // ??这里暂时没有看懂，应该处理了一种特殊情况
       if (
         receiver ===
           (isReadonly

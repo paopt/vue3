@@ -109,6 +109,7 @@ class RefImpl<T = any> {
   _value: T
   private _rawValue: T
 
+  
   dep: Dep = new Dep()
 
   public readonly [ReactiveFlags.IS_REF] = true

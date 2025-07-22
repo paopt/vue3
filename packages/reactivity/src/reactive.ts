@@ -15,6 +15,7 @@ import type { RawSymbol, Ref, UnwrapRefSimple } from './ref'
 import { ReactiveFlags } from './constants'
 import { warn } from './warning'
 
+// 这些变量没有定义在对象上，是get函数处理的
 export interface Target {
   [ReactiveFlags.SKIP]?: boolean
   [ReactiveFlags.IS_REACTIVE]?: boolean
@@ -23,6 +24,7 @@ export interface Target {
   [ReactiveFlags.RAW]?: any
 }
 
+// 这里用了WeakMap，tagret弱引用
 export const reactiveMap: WeakMap<Target, any> = new WeakMap<Target, any>()
 export const shallowReactiveMap: WeakMap<Target, any> = new WeakMap<
   Target,
@@ -40,6 +42,7 @@ enum TargetType {
   COLLECTION = 2,
 }
 
+// 类型分类，proxy handler逻辑不同
 function targetTypeMap(rawType: string) {
   switch (rawType) {
     case 'Object':
@@ -254,6 +257,7 @@ export function shallowReadonly<T extends object>(target: T): Readonly<T> {
   )
 }
 
+// reactive， readonly，shallowReactive，shallowReadonly的核心函数
 function createReactiveObject(
   target: Target,
   isReadonly: boolean,
@@ -261,7 +265,9 @@ function createReactiveObject(
   collectionHandlers: ProxyHandler<any>,
   proxyMap: WeakMap<Target, any>,
 ) {
+  // 转换之前，先类型检查
   if (!isObject(target)) {
+    // 打包时需要处理__DEV__变量，因为在生产环境中不需要警告
     if (__DEV__) {
       warn(
         `value cannot be made ${isReadonly ? 'readonly' : 'reactive'}: ${String(
@@ -285,14 +291,17 @@ function createReactiveObject(
     return target
   }
   // target already has corresponding Proxy
+  // 检查是否已经存在代理对象，防止重复处理
   const existingProxy = proxyMap.get(target)
   if (existingProxy) {
     return existingProxy
   }
+  // map、set与object、array处理不同
   const proxy = new Proxy(
     target,
     targetType === TargetType.COLLECTION ? collectionHandlers : baseHandlers,
   )
+  // 缓存代理
   proxyMap.set(target, proxy)
   return proxy
 }
@@ -377,6 +386,7 @@ export function isProxy(value: any): boolean {
  */
 export function toRaw<T>(observed: T): T {
   const raw = observed && (observed as Target)[ReactiveFlags.RAW]
+  // 递归处理是有必要的
   return raw ? toRaw(raw) : observed
 }
 

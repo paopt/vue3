@@ -339,6 +339,7 @@ function baseCreateRenderer(
 ): HydrationRenderer
 
 // implementation
+// 渲染器实现，巨无霸
 function baseCreateRenderer(
   options: RendererOptions,
   createHydrationFns?: typeof createHydrationFunctions,
@@ -354,6 +355,7 @@ function baseCreateRenderer(
     setDevtoolsHook(target.__VUE_DEVTOOLS_GLOBAL_HOOK__, target)
   }
 
+  // 实现跨平台的关键，平台相关的api通过参数配置的形式传入
   const {
     insert: hostInsert,
     remove: hostRemove,
@@ -371,6 +373,7 @@ function baseCreateRenderer(
 
   // Note: functions inside this closure should use `const xxx = () => {}`
   // style in order to prevent being inlined by minifiers.
+  // 核心代码
   const patch: PatchFn = (
     n1,
     n2,
@@ -387,20 +390,22 @@ function baseCreateRenderer(
     }
 
     // patching & not same type, unmount old tree
+    // 类型不同，卸载n1
     if (n1 && !isSameVNodeType(n1, n2)) {
       anchor = getNextHostNode(n1)
       unmount(n1, parentComponent, parentSuspense, true)
       n1 = null
     }
-
     if (n2.patchFlag === PatchFlags.BAIL) {
       optimized = false
       n2.dynamicChildren = null
     }
 
+    // 根据类型处理
     const { type, ref, shapeFlag } = n2
     switch (type) {
       case Text:
+
         processText(n1, n2, container, anchor)
         break
       case Comment:
@@ -633,6 +638,7 @@ function baseCreateRenderer(
     }
   }
 
+  // 挂载
   const mountElement = (
     vnode: VNode,
     container: RendererElement,
@@ -646,7 +652,7 @@ function baseCreateRenderer(
     let el: RendererElement
     let vnodeHook: VNodeHook | undefined | null
     const { props, shapeFlag, transition, dirs } = vnode
-
+    // 创建dom
     el = vnode.el = hostCreateElement(
       vnode.type as string,
       namespace,
@@ -657,8 +663,10 @@ function baseCreateRenderer(
     // mount children first, since some props may rely on child content
     // being already rendered, e.g. `<select value>`
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
+      // 子节点是纯文本
       hostSetElementText(el, vnode.children as string)
     } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
+      // 子节点是数组
       mountChildren(
         vnode.children as VNodeArrayChildren,
         el,
@@ -714,6 +722,7 @@ function baseCreateRenderer(
     if (needCallTransitionHooks) {
       transition!.beforeEnter(el)
     }
+    // 插入dom
     hostInsert(el, container, anchor)
     if (
       (vnodeHook = props && props.onVnodeMounted) ||
@@ -721,6 +730,7 @@ function baseCreateRenderer(
       dirs
     ) {
       queuePostRenderEffect(() => {
+        // 生命周期函数
         vnodeHook && invokeVNodeHook(vnodeHook, parentComponent, vnode)
         needCallTransitionHooks && transition!.enter(el)
         dirs && invokeDirectiveHook(vnode, null, parentComponent, 'mounted')
@@ -846,6 +856,7 @@ function baseCreateRenderer(
       hostSetElementText(el, '')
     }
 
+    // 动态节点
     if (dynamicChildren) {
       patchBlockChildren(
         n1.dynamicChildren!,
@@ -1166,6 +1177,7 @@ function baseCreateRenderer(
     }
   }
 
+  // 挂载组件
   const mountComponent: MountComponentFn = (
     initialVNode,
     container,
@@ -1179,6 +1191,7 @@ function baseCreateRenderer(
     // mounting
     const compatMountInstance =
       __COMPAT__ && initialVNode.isCompatRoot && initialVNode.component
+    // 创建组件实例
     const instance: ComponentInternalInstance =
       compatMountInstance ||
       (initialVNode.component = createComponentInstance(
@@ -1206,6 +1219,7 @@ function baseCreateRenderer(
       if (__DEV__) {
         startMeasure(instance, `init`)
       }
+      // 设置组件实例
       setupComponent(instance, false, optimized)
       if (__DEV__) {
         endMeasure(instance, `init`)
@@ -1276,6 +1290,7 @@ function baseCreateRenderer(
     }
   }
 
+  // 设置副作用渲染函数
   const setupRenderEffect: SetupRenderEffectFn = (
     instance,
     initialVNode,
@@ -1286,6 +1301,7 @@ function baseCreateRenderer(
     optimized,
   ) => {
     const componentUpdateFn = () => {
+      // 挂载
       if (!instance.isMounted) {
         let vnodeHook: VNodeHook | null | undefined
         const { el, props } = initialVNode
@@ -1293,6 +1309,7 @@ function baseCreateRenderer(
         const isAsyncWrapperVNode = isAsyncWrapper(initialVNode)
 
         toggleRecurse(instance, false)
+        // 执行生命周期函数
         // beforeMount hook
         if (bm) {
           invokeArrayFns(bm)
@@ -1362,6 +1379,7 @@ function baseCreateRenderer(
           if (__DEV__) {
             startMeasure(instance, `render`)
           }
+          // 渲染组件生成子树vnode
           const subTree = (instance.subTree = renderComponentRoot(instance))
           if (__DEV__) {
             endMeasure(instance, `render`)
@@ -1369,6 +1387,7 @@ function baseCreateRenderer(
           if (__DEV__) {
             startMeasure(instance, `patch`)
           }
+          // 把子树vnode挂载到container中
           patch(
             null,
             subTree,
@@ -1381,6 +1400,7 @@ function baseCreateRenderer(
           if (__DEV__) {
             endMeasure(instance, `patch`)
           }
+          // 保存渲染生成的子树根dom节点
           initialVNode.el = subTree.el
         }
         // mounted hook
@@ -1437,6 +1457,7 @@ function baseCreateRenderer(
         // #2458: deference mount-only object parameters to prevent memleaks
         initialVNode = container = anchor = null as any
       } else {
+        // 更新
         let { next, bu, u, parent, vnode } = instance
 
         if (__FEATURE_SUSPENSE__) {
@@ -1562,6 +1583,7 @@ function baseCreateRenderer(
 
     // create reactive effect for rendering
     instance.scope.on()
+    // 创建组件渲染的副作用响应式对象
     const effect = (instance.effect = new ReactiveEffect(componentUpdateFn))
     instance.scope.off()
 
@@ -1569,6 +1591,7 @@ function baseCreateRenderer(
     const job: SchedulerJob = (instance.job = effect.runIfDirty.bind(effect))
     job.i = instance
     job.id = instance.uid
+    // 这里使用了调度器
     effect.scheduler = () => queueJob(job)
 
     // allowRecurse

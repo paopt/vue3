@@ -63,6 +63,7 @@ declare module '@vue/runtime-core' {
   }
 }
 
+// 浏览器dom api，通过参数配置的方式传入渲染器，实现跨平台
 const rendererOptions = /*@__PURE__*/ extend({ patchProp }, nodeOps)
 
 // lazy create the renderer - this makes core renderer logic tree-shakable
@@ -71,6 +72,7 @@ let renderer: Renderer<Element | ShadowRoot> | HydrationRenderer
 
 let enabledHydration = false
 
+// 创建渲染器
 function ensureRenderer() {
   return (
     renderer ||
@@ -95,19 +97,26 @@ export const hydrate = ((...args) => {
   ensureHydrationRenderer().hydrate(...args)
 }) as RootHydrateFunction
 
+// 应用程序初始化，这是是入口
 export const createApp = ((...args) => {
+  // 创建app对象
   const app = ensureRenderer().createApp(...args)
 
+  // 生产环境，这里的代码会被rollup删除
   if (__DEV__) {
     injectNativeTagCheck(app)
     injectCompilerOptionsCheck(app)
   }
 
+  // mount里包含了与平台无关的逻辑
   const { mount } = app
+  // 重写mount方法，增加一些浏览器平台的逻辑处理
   app.mount = (containerOrSelector: Element | ShadowRoot | string): any => {
+    // 容器检查
     const container = normalizeContainer(containerOrSelector)
     if (!container) return
 
+    // 检查组件模板
     const component = app._component
     if (!isFunction(component) && !component.render && !component.template) {
       // __UNSAFE__
@@ -136,9 +145,11 @@ export const createApp = ((...args) => {
     }
     const proxy = mount(container, false, resolveRootNamespace(container))
     if (container instanceof Element) {
+      // 这里模板已经编译，v-cloak可以删除了
       container.removeAttribute('v-cloak')
       container.setAttribute('data-v-app', '')
     }
+    // 返回组件实例
     return proxy
   }
 

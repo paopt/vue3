@@ -72,6 +72,7 @@ export function normalizeClass(value: unknown): string {
       }
     }
   } else if (isObject(value)) {
+    // value[name]可以获取到值吗
     for (const name in value) {
       if (value[name]) {
         res += name + ' '

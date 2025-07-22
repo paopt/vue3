@@ -90,6 +90,8 @@ export function baseCompile(
   const resolvedOptions = extend({}, options, {
     prefixIdentifiers,
   })
+  // 解析模版生成ast
+  // ast的根节点是一个虚拟节点，这样组件就可以有多个根节点
   const ast = isString(source) ? baseParse(source, resolvedOptions) : source
   const [nodeTransforms, directiveTransforms] =
     getBaseTransformPreset(prefixIdentifiers)
@@ -101,6 +103,7 @@ export function baseCompile(
     }
   }
 
+  // 转换ast
   transform(
     ast,
     extend({}, resolvedOptions, {
@@ -115,6 +118,6 @@ export function baseCompile(
       ),
     }),
   )
-
+  // 生成代码
   return generate(ast, resolvedOptions)
 }
